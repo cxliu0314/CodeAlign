@@ -1,4 +1,4 @@
-name: Pyramid_m1_base 
+name: Pyramid_m1_base
 root_dir: "dataset/OPV2V/train"
 validate_dir: "dataset/OPV2V/validate"
 test_dir: "dataset/OPV2V/test"
@@ -18,8 +18,9 @@ cav_lidar_range: &cav_lidar [-102.4, -51.2, -3, 102.4, 51.2, 1]
 
 
 heter:
-  assignment_path: "opencood/logs/heter_modality_assign/opv2v_4modality.json" 
+  assignment_path: "opencood/modality_assign/opv2v_4modality.json"
   ego_modality: &ego_modality "m1"
+  heter_group: [['m1']]
   mapping_dict:
     m1: m1
     m2: m1
@@ -46,7 +47,7 @@ heter:
 fusion:
   core_method: 'intermediateheter'
   dataset: 'opv2v'
-  args: 
+  args:
     proj_first: false
     grid_conf: None # place-holder
     data_aug_conf: None # place-holder
@@ -112,12 +113,12 @@ model:
         layer_nums: [3]
         layer_strides: [2]
         num_filters: [64]
-  
+
       aligner_args:
         core_method: identity
 
 
-    fusion_backbone: 
+    fusion_backbone:
       resnext: true
       layer_nums: [3, 5, 8]
       layer_strides: [1, 2, 2]
@@ -126,7 +127,7 @@ model:
       num_upsample_filter: [128, 128, 128]
       anchor_number: *anchor_num
 
-    shrink_header: 
+    shrink_header:
       kernal_size: [ 3 ]
       stride: [ 1 ]
       padding: [ 1 ]
@@ -174,4 +175,3 @@ lr_scheduler:
   core_method: multistep #step, multistep and Exponential support
   gamma: 0.1
   step_size: [15, 25]
-

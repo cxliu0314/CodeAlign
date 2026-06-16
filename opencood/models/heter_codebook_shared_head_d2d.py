@@ -363,11 +363,9 @@ class HeterCodebookSharedHeadC2C(nn.Module):
             else:
                 spatial_aligned_feature = modality_feature_dict[modality_name][feat_idx]
             
-            # 按照mod_name == backend_modality分类处理feature
             C, H, W = spatial_aligned_feature.shape
             spatial_aligned_feature = spatial_aligned_feature.unsqueeze(0)
             if modality_name == backend_modality:
-                # 直接通过codebook转换
                 feature_2d = spatial_aligned_feature.permute(0, 2, 3, 1).contiguous().reshape(-1, C)
                 feature_2d, code, _, _ = self.backend_models[backend_modality]['codebook'](feature_2d)
                 feature_2d = feature_2d.view(-1, H, W, C).permute(0, 3, 1, 2).contiguous().squeeze(0)

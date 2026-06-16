@@ -44,11 +44,10 @@ class CollabWC2CInfer(nn.Module):
             print('this stage is getting codes dataset\n'*10)
 
         self.cam_crop_info = {} 
-        self.save_for_vis = False # 保存到datatset/codebook_datatset for vis
+        self.save_for_vis = False
         self.only_return_detection = args['only_return_detection']
         self.only_return_class = args['only_return_class']
 
-        # 在计算code2code的分类结果时 是否使用经codebook离散化后的feature(旧的一直是True) 
         self.class_feature_codebook = args.get('class_feature_codebook',True)
         if self.class_feature_codebook:
             print('now is use sparse feature for infer')
@@ -160,10 +159,6 @@ class CollabWC2CInfer(nn.Module):
             """
             if model_setting.get("adapter",None) is not None:  # Never equip adapter and reverter for m0
                 setattr(self, f"code2code_{modality_name}", Adapter(model_setting["adapter"]))
-                # def count_parameters(model):
-                #     return sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6
-                # print('code2code:',count_parameters(eval(f"self.code2code_{modality_name}")))
-                # import ipdb;ipdb.set_trace()
 
             """
             no Shared Heads
@@ -212,27 +207,7 @@ class CollabWC2CInfer(nn.Module):
         for p in self.parameters():
             p.requires_grad_(False)
 
-        
-        # tmp
-        # try:
-        #     m_pair1 = ['m2','m6']
-        #     setattr(self, f"code2code_{m_pair1[0]}", 
-        #                 getattr(self, f"code2code_{m_pair1[1]}"))
-        # except AttributeError as e:
-        #     print(f"Warning: Failed to copy m26")
-        # try:
-        #     m_pair1 = ['m1','m7']
-        #     setattr(self, f"code2code_{m_pair1[0]}", 
-        #                 getattr(self, f"code2code_{m_pair1[1]}"))
-        # except AttributeError as e:
-        #     print(f"Warning: Failed to copy m17")
-        # for modality_name in self.modality_name_list:
-        #     if modality_name in ["m0"]:
-        #         continue
-        #     eval(f"self.code2code_{modality_name}").train()
-        #     print(f'start train code2code_{modality_name}')
-        #     for p in eval(f"self.code2code_{modality_name}").parameters():
-        #         p.requires_grad_(True)
+
     def forward(self, data_dict):
         output_dict = {'pyramid': 'collab'}
         
@@ -303,7 +278,6 @@ class CollabWC2CInfer(nn.Module):
                     quantizeds, codes = eval(f'self.multi_channel_compressor_{modality_name}.quantized')(feature)
                     feature = eval(f'self.multi_channel_compressor_{modality_name}.get_feature')(quantizeds)
                 # feature, codes, _, _ = eval(f'self.multi_channel_compressor_{modality_name}')(feature)
-                # 被拆分成两步
                 feature = feature.view(-1, H, W, C).permute(0, 3, 1, 2).contiguous()
                 # feature_vis = feature
                 if modality_name != ego_modality:
@@ -313,43 +287,12 @@ class CollabWC2CInfer(nn.Module):
                     _, C1, _, _ = feature_code.shape
                     feature_code = feature_code.permute(0, 2, 3, 1).contiguous().view(-1,1,C1)
                     quantizeds_index = torch.argmax(feature_code,dim=2)
-                    quantizeds_infer = torch.zeros(quantizeds_index.shape[0], 1, C1).to(quantizeds_index.device)  # 初始化全 0 张量
-                    quantizeds_infer.scatter_(dim=2, index=quantizeds_index.unsqueeze(-1), value=1)  # 填充 1
+                    quantizeds_infer = torch.zeros(quantizeds_index.shape[0], 1, C1).to(quantizeds_index.device)
+                    quantizeds_infer.scatter_(dim=2, index=quantizeds_index.unsqueeze(-1), value=1)
                     feature_ego_infer = eval(f'self.multi_channel_compressor_{ego_modality}.get_feature')([quantizeds_infer])
                     feature = feature_ego_infer.view(-1, H, W, C).permute(0, 3, 1, 2).contiguous()
 
             modality_feature_dict[modality_name] = feature
-
-        # from matplotlib import pyplot as plt
-        # n = 2
-        # fig,ax = plt.subplots(n,2,figsize=(10,5*n))
-        # ax[0,0].imshow(np.mean(modality_feature_dict['m1'][0].detach().cpu().numpy(),axis=0))
-        # ax[0,1].imshow(np.mean(modality_feature_dict['m2'][0].detach().cpu().numpy(),axis=0))
-        # # # 对比 是否是同一帧
-        # ax[1,0].imshow(np.mean(modality_feature_dict['m1'][0].detach().cpu().numpy(),axis=0))
-        # import ipdb;ipdb.set_trace()
-        # ax[1,1].imshow(np.mean(feature_vis[0].detach().cpu().numpy(),axis=0))
-        # # # 对比code2code前后
-        # # ax[2,0].imshow(np.argmax(modality_pred_codes_dict['m0'].view(-1, H, W, 16).permute(0, 3, 1, 2).contiguous()[0].detach().cpu().numpy(),axis=0))
-        # # ax[2,1].imshow(codes[0].view(-1, H, W)[0].detach().cpu().numpy())
-        # # # 对比新生成的code
-        # # ax[3,0].imshow(np.mean(modality_feature_dict['m0'][0].detach().cpu().numpy(),axis=0))
-        # # ax[3,1].imshow(np.mean(modality_code2code_feature_dict['m0'][0].detach().cpu().numpy(),axis=0))
-        # # # 对比新生成的feature
-        # # ax[4,0].imshow(np.mean(modality_feature_dict['m0'][0].detach().cpu().numpy(),axis=0))
-        # # ax[4,1].imshow(np.mean(modality_code2code_infer_dict['m0'][0].detach().cpu().numpy(),axis=0))
-        # # # 对比 m0 codebook feature 和 infer 的区别
-        # plt.savefig('debug_data/c2cfeature_infer.jpg')
-        # import ipdb;ipdb.set_trace()
-
-
-        # ego_modality = 'm0'
-        # output_dict[ego_modality] = {'pyramid': 'collab'}
-        # output_dict_class = {}
-        # output_dict_class.update({'GT': modality_codes_dict[ego_modality].view(-1, H, W)})
-        # output_dict_class.update({'PREDS': modality_pred_codes_dict[ego_modality]})
-        # if self.only_return_class :
-        #     return None , output_dict_class
 
         
         """
@@ -362,13 +305,6 @@ class CollabWC2CInfer(nn.Module):
             heter_feature_2d_list.append(modality_feature_dict[modality_name][feat_idx])
             counting_dict[modality_name] += 1
         heter_feature_2d = torch.stack(heter_feature_2d_list)
-
-        # import ipdb;ipdb.set_trace()
-        # from matplotlib import pyplot as plt
-        # fig,ax = plt.subplots(3,figsize=(5,5))
-        # ax[0].imshow(np.mean(heter_feature_2d[0].detach().cpu().numpy(),axis=0))
-        # ax[1].imshow(np.mean(heter_feature_2d[1].detach().cpu().numpy(),axis=0))
-        
         
         fused_feature, occ_outputs = eval(f'self.pyramid_backbone_{ego_modality}').forward_collab(
                                                 heter_feature_2d,
@@ -384,11 +320,6 @@ class CollabWC2CInfer(nn.Module):
         cls_preds = eval(f'self.cls_head_{ego_modality}')(fused_feature)
         reg_preds = eval(f'self.reg_head_{ego_modality}')(fused_feature)
         dir_preds = eval(f'self.dir_head_{ego_modality}')(fused_feature)
-
-        # ax[2].imshow(cls_preds[0,0].detach().cpu().numpy())
-        # plt.savefig('debug_data/c2c_debug_infer.jpg')
-        # import ipdb;ipdb.set_trace()
-
 
         output_dict.update({'cls_preds': cls_preds,
                             'reg_preds': reg_preds,

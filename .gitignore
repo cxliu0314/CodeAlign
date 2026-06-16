@@ -151,9 +151,6 @@ box_align_items
 stage1_boxes/
 bash_script/
 dataset
-opencood/logs
-opencood/logs_HEAL
-opencood/logs_baseline
 opencood/models/heter_SECOND_lift_splat_2stage_dense_redet.py
 opencood/models/heter_SECOND_lift_splat_2stage_redet.py
 opencood/loss/heterception_redet_loss.py
@@ -163,3 +160,8 @@ opencood/tools/save_params.py
 ./vscode
 .vscode
 opencood/tools/inference_w_noise_heter.py
+
+# Local reproduction notes, generated rerun outputs, and helper scripts.
+docs/
+scripts/
+MODEL_ZOO.md

@@ -20,7 +20,7 @@ add_data_extension: ['bev_visibility.png']
 
 
 heter:
-  assignment_path: "opencood/logs/heter_modality_assign/opv2v_4modality.json" 
+  assignment_path: "opencood/modality_assign/opv2v_4modality.json"
   ego_modality: &ego_modality "m1&m2&m3"
   lidar_channels_dict:
     m3: 32
@@ -85,7 +85,7 @@ heter:
 fusion:
   core_method: 'intermediateheter'
   dataset: 'opv2v'
-  args: 
+  args:
     proj_first: false
     grid_conf: None # place-holder
     data_aug_conf: None # place-holder
@@ -153,8 +153,8 @@ model:
         num_filters: [64, 128, 256]
         upsample_strides: [1, 2, 4]
         num_upsample_filter: [128, 128, 128]
-  
-      shrink_header: 
+
+      shrink_header:
         kernal_size: [ 3 ]
         stride: [ 1 ]
         padding: [ 1 ]
@@ -186,8 +186,8 @@ model:
         upsample_strides: [1, 2, 4]
         num_upsample_filter: [128, 128, 128]
         inplanes: 128
-  
-      shrink_header: 
+
+      shrink_header:
         kernal_size: [ 3 ]
         stride: [ 1 ]
         padding: [ 1 ]
@@ -217,16 +217,16 @@ model:
         upsample_strides: [1, 2, 4]
         num_upsample_filter: [128, 128, 128]
         inplanes: 128
-  
-      shrink_header: 
+
+      shrink_header:
         kernal_size: [ 3 ]
         stride: [ 1 ]
         padding: [ 1 ]
         dim: [ 256 ]
         input_dim: 384 # 128 * 3
 
-    fusion_method: max 
-    
+    fusion_method: max
+
     in_head: 256
 
     anchor_number: *anchor_num

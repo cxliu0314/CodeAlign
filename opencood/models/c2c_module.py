@@ -112,7 +112,7 @@ class TranslatorConvNextWithModalHeads(nn.Module):
     def init_modality_mapping(self):
         modality_map = self.submodule_args.get('modality_map', None)
         if modality_map is None or len(modality_map) == 0:
-            raise ValueError("submodule_args['modality_map'] 必须提供且非空，例如 ['m2','m3']")
+            raise ValueError("submodule_args['modality_map'] is needed, e.g., ['m2','m3']")
         self.modality_map = modality_map
         self.modality2idx = {m: i for i, m in enumerate(modality_map)}
     
@@ -124,7 +124,6 @@ class TranslatorConvNextWithModalHeads(nn.Module):
         self.smoothing = nn.Conv2d(hiddle_channel, hiddle_channel, kernel_size=3, padding=1)
     
     def init_modal_heads(self):
-        # 为每个模态创建独立的MLP输出头
         hidden_dim = self.submodule_args.get("dim", 64)
         mlp_hidden_dim = self.submodule_args.get("mlp_hidden_dim", 64)
         
@@ -139,7 +138,7 @@ class TranslatorConvNextWithModalHeads(nn.Module):
     
     def forward(self, ego_feature, mod_name: str):
         if mod_name not in self.modality2idx:
-            raise ValueError(f"未知模态 {mod_name}，可选：{self.modality_map}")
+            raise ValueError(f"unknown {mod_name}, available: {self.modality_map}")
         
         ego_feature = ego_feature * self.submodule_args.get("early_scale", 1.0)
         if not self.submodule_args.get("late_upsample", False):
@@ -160,7 +159,7 @@ class TranslatorConvNextWithModalHeads(nn.Module):
 
 class FiLMHead(nn.Module):
     """
-    为了兼容不同层的通道数，MLP 的输出长度固定为 2 * max_channels，具体层用到多少就 slice 多少。
+    To accommodate the number of channels in different layers, the output length of the MLP is fixed at 2 * max_channels, and only as much as needed for a specific layer is sliced.
     """
     def __init__(self, emb_dim: int, max_channels: int, use_tanh: bool = True, mlp_hidden_mult: int = 4):
         super().__init__()
@@ -198,7 +197,7 @@ class ConvNeXtFiLM(nn.Module):
                 film_heads: List[FiLMHead],
                 emb_list_for_blocks: List[torch.Tensor]):
         assert len(emb_list_for_blocks) == self.num_of_blocks, \
-            f"需要 {self.num_of_blocks} 个 block 对应的 embedding，实际 {len(emb_list_for_blocks)}"
+            f"need {self.num_of_blocks} embedding, now {len(emb_list_for_blocks)}"
         for i, blk in enumerate(self.blocks):
             x = blk(x)
             x = film_heads[i](x, emb_list_for_blocks[i], channels=self.dim)
@@ -207,11 +206,11 @@ class ConvNeXtFiLM(nn.Module):
 class TranslatorConvNextFilm(nn.Module):
     """
     submodule_args:
-      - dim: int（ConvNeXt/hidden 通道）
+      - dim: int(ConvNeXt/hidden channel)
       - num_of_blocks: int
       - film_args: {
           'emb_dim': int,
-          'modality_map': List[str],      # 例如 ['m2','m3']
+          'modality_map': List[str],
         }
     """
     def __init__(self, submodule_args, in_channels, out_channels, in_cav_lidar_range, out_cav_lidar_range, in_feature_shape, out_feature_shape):

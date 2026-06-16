@@ -126,31 +126,6 @@ class HeterPyramidSharedHead(nn.Module):
         self.pyramid_backbone = PyramidFusion(args['fusion_backbone'])
 
         """
-        Codebook
-        """
-        # self.multi_channel_compressor_flag = False
-        # if 'multi_channel_compressor' in args and args['multi_channel_compressor']:
-        #     print('multi_channel_compressor_flag')
-        #     self.multi_channel_compressor_flag = True
-
-        # channel = 64
-        # p_rate = 0.0
-        # seg_num = args['codebook']['seg_num']
-        # if args['codebook']['r'] == 1:
-        #     dict_size = [args['codebook']['dict_size']]
-        # elif args['codebook']['r'] == 2:
-        #     dict_size = [args['codebook']['dict_size'], args['codebook']['dict_size']]
-        # else:
-        #     dict_size = [args['codebook']['dict_size'], args['codebook']['dict_size'], args['codebook']['dict_size']]
-        # self.multi_channel_compressor = UMGMQuantizer(channel, seg_num, dict_size, p_rate,
-        #                   {"latentStageEncoder": lambda: nn.Linear(channel, channel), "quantizationHead": lambda: nn.Linear(channel, channel),
-        #                    "latentHead": lambda: nn.Linear(channel, channel), "restoreHead": lambda: nn.Linear(channel, channel),
-        #                    "dequantizationHead": lambda: nn.Linear(channel, channel), "sideHead": lambda: nn.Linear(channel, channel)})
-        # print("codebook:", self.multi_channel_compressor_flag)
-        # print("seg_num: ", seg_num)        
-        # print("dict_size: ", args['codebook']['dict_size'])
-
-        """
         Shrink header
         """
         self.shrink_flag = False
@@ -196,24 +171,6 @@ class HeterPyramidSharedHead(nn.Module):
         return split_x
             
     def stage2(self):
-        # for p in self.multi_channel_compressor.parameters():
-        #     p.requires_grad_(False)
-        # for p in self.pyramid_backbone.parameters():
-        #     p.requires_grad_(False)
-        # for p in self.shrink_conv.parameters():
-        #     p.requires_grad_(False)
-        # for p in self.cls_head_single.parameters():
-        #     p.requires_grad_(False)
-        # for p in self.reg_head_single.parameters():
-        #     p.requires_grad_(False)
-        # for p in self.dir_head_single.parameters():
-        #     p.requires_grad_(False)
-        # for p in self.cls_head.parameters():
-        #     p.requires_grad_(False)
-        # for p in self.reg_head.parameters():
-        #     p.requires_grad_(False)
-        # for p in self.dir_head.parameters():
-        #     p.requires_grad_(False)
         for modality_name in self.modality_name_list:
             for p in eval(f"self.encoder_{modality_name}").parameters():
                 p.requires_grad_(False)
@@ -298,50 +255,6 @@ class HeterPyramidSharedHead(nn.Module):
                 print(f"Saved image for car {k} at {save_path}/{i}_{k}_{agent_modality_list[k]}.jpg")
         
         """
-        Codebook Part
-        """
-        # N, C, H, W = heter_feature_2d.shape
-        # #print("heter_feature_2d_shape: ", heter_feature_2d.shape)
-        # # import pdb
-        # # pdb.set_trace()
-        # if self.multi_channel_compressor_flag:
-        #     #print("------------Codebook information------------")
-        #     heter_feature_2d_gt = heter_feature_2d.clone()
-        #     heter_feature_2d = heter_feature_2d.permute(0, 2, 3, 1).contiguous().view(-1, C)
-        #     heter_feature_2d, _, _, codebook_loss = self.multi_channel_compressor(heter_feature_2d)
-        #     heter_feature_2d = heter_feature_2d.view(-1, H, W, C).permute(0, 3, 1, 2).contiguous()
-
-        #     if save_path!='':
-        #         for k in range(heter_feature_2d.shape[0]):
-        #             # 对每辆车的特征图进行通道平均
-        #             avg_feature = heter_feature_2d[k].mean(dim=0)  # 沿着通道维度求均值，得到形状 [256, 256]
-        #             # 规范化到 [0, 1] 之间
-        #             avg_feature = (avg_feature - avg_feature.min()) / (avg_feature.max() - avg_feature.min())
-        #             # 将其转为 [0, 255] 的整数范围，符合图像保存的标准
-        #             img = avg_feature.mul(255).byte()
-        #             # 使用 torchvision 保存为图片
-        #             save_image = torchvision.transforms.ToPILImage()(img)  # 转换为 PIL 图片
-        #             save_image.save(f"{save_path}/{i}_{k}_{agent_modality_list[k]}_code.jpg")  # 保存图片
-        #             print(f"Saved image for car {k} at {save_path}/{i}_{k}_{agent_modality_list[k]}_code.jpg")
-
-        #     heter_feature_2d_gt_split = self.regroup(heter_feature_2d_gt, record_len)
-        #     shape_num = 0
-        #     #print("record_len: ", record_len)
-        #     #print("heter_feature_2d_gt_shape: ", heter_feature_2d_gt.shape)
-        #     #print("heter_feature_2d_gt_split: ", len(heter_feature_2d_gt_split))
-        #     for index in range(len(heter_feature_2d_gt_split)):
-        #         #print("heter_feature_2d_gt_split_shape: ", heter_feature_2d_gt_split[index].shape)
-        #         #print(heter_feature_2d_gt_split[index].shape[0])
-        #         #print(shape_num)
-        #         heter_feature_2d[shape_num] = heter_feature_2d_gt_split[index][0]
-        #         shape_num = shape_num + heter_feature_2d_gt_split[index].shape[0]
-                
-        #     #print("heter_feature_2d_shape: ", heter_feature_2d.shape)
-        #     output_dict.update({'codebook_loss': codebook_loss})
-        #     #print('codebook_loss', codebook_loss)
-        #     #print("------------Codebook information------------")
-        
-        """
         Single supervision
         """
         if self.supervise_single:
@@ -354,9 +267,6 @@ class HeterPyramidSharedHead(nn.Module):
 
         if self.compress:
             heter_feature_2d = self.compressor(heter_feature_2d)
-
-        # heter_feature_2d is downsampled 2x
-        # add croping information to collaboration module
         
         fused_feature, occ_outputs = self.pyramid_backbone.forward_collab(
                                                 heter_feature_2d,
@@ -373,8 +283,6 @@ class HeterPyramidSharedHead(nn.Module):
         reg_preds = self.reg_head(fused_feature)
         dir_preds = self.dir_head(fused_feature)
 
-        # _, bbox_temp = self.generate_predicted_boxes(cls_preds, reg_preds)
-
         output_dict.update({'cls_preds': cls_preds,
                             'reg_preds': reg_preds,
                             'dir_preds': dir_preds})
@@ -383,57 +291,3 @@ class HeterPyramidSharedHead(nn.Module):
                             occ_outputs})
 
         return output_dict
-
-    def generate_predicted_boxes(self, cls_preds, box_preds, dir_cls_preds=None):
-        """
-        Args:
-            batch_size:
-            cls_preds: (N, H, W, C1)
-            box_preds: (N, H, W, C2)
-            dir_cls_preds: (N, H, W, C3)
-
-        Returns:
-            batch_cls_preds: (B, num_boxes, num_classes)
-            batch_box_preds: (B, num_boxes, 7+C)
-
-        """
-        box_preds = box_preds.permute(0, 2, 3, 1).contiguous()
-        
-        batch, H, W, code_size = box_preds.size()   ## code_size 表示的是预测的尺寸
-        
-        box_preds = box_preds.reshape(batch, H*W, code_size)
-
-        batch_reg = box_preds[..., 0:2]
-        # batch_hei = box_preds[..., 2:3] 
-        # batch_dim = torch.exp(box_preds[..., 3:6])
-        h = box_preds[..., 3:4] * self.out_size_factor * self.voxel_size[0]
-        w = box_preds[..., 4:5] * self.out_size_factor * self.voxel_size[1]
-        l = box_preds[..., 5:6] * self.out_size_factor * self.voxel_size[2]
-        batch_dim = torch.cat([h,w,l], dim=-1)
-        batch_hei = box_preds[..., 2:3] * self.out_size_factor * self.voxel_size[2] + self.cav_lidar_range[2]
-
-        batch_rots = box_preds[..., 6:7]
-        batch_rotc = box_preds[..., 7:8]
-
-        rot = torch.atan2(batch_rots, batch_rotc)
-
-        ys, xs = torch.meshgrid([torch.arange(0, H), torch.arange(0, W)])
-        ys = ys.view(1, H, W).repeat(batch, 1, 1).to(cls_preds.device)
-        xs = xs.view(1, H, W).repeat(batch, 1, 1).to(cls_preds.device)
-
-        xs = xs.view(batch, -1, 1) + batch_reg[:, :, 0:1]
-        ys = ys.view(batch, -1, 1) + batch_reg[:, :, 1:2]
-
-        xs = xs * self.out_size_factor * self.voxel_size[0] + self.cav_lidar_range[0]   ## 基于feature_map 的size求解真实的坐标
-        ys = ys * self.out_size_factor * self.voxel_size[1] + self.cav_lidar_range[1]
-
-
-        batch_box_preds = torch.cat([xs, ys, batch_hei, batch_dim, rot], dim=2)
-        # batch_box_preds = batch_box_preds.reshape(batch, H, W, batch_box_preds.shape[-1])
-        # batch_box_preds = batch_box_preds.permute(0, 3, 1, 2).contiguous()
-
-        # batch_box_preds_temp = torch.cat([xs, ys, batch_hei, batch_dim, rot], dim=1)
-        # box_preds = box_preds.permute(0, 3, 1, 2).contiguous()
-
-        # batch_cls_preds = cls_preds.view(batch, H*W, -1)
-        return cls_preds, batch_box_preds

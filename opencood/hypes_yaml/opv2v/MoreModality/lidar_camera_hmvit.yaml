@@ -9,7 +9,7 @@ train_params:
   epoches: 60
   eval_freq: 2
   save_freq: 2
-  max_cav: &max_cav 5 
+  max_cav: &max_cav 5
 
 comm_range: 70
 input_source: ['lidar', 'camera', 'depth']
@@ -19,13 +19,14 @@ cav_lidar_range: &cav_lidar [-102.4, -102.4, -3, 102.4, 102.4, 1]
 add_data_extension: ['bev_visibility.png']
 
 heter:
-  assignment_path: "opencood/logs/heter_modality_assign/opv2v_4modality.json" 
-  ego_modality: &ego_modality "m1&m6"
+  assignment_path: "opencood/modality_assign/opv2v_4modality.json"
+  ego_modality: &ego_modality ['m1','m2']
+  heter_group: [['m1'],['m2']]
   mapping_dict:
     m1: m1
-    : m1
-    m3: m6
-    m4: m6
+    m2: m1
+    m3: m2
+    m4: m2
   modality_setting:
     m1:
       sensor_type: &sensor_type_m1 'lidar'
@@ -43,17 +44,17 @@ heter:
         # lidar range for each individual cav.
         cav_lidar_range: *cav_lidar
 
-    m6:
-      sensor_type: &sensor_type_m6 'camera'
-      core_method: &core_method_m6 "lift_splat_shoot"
+    m2:
+      sensor_type: &sensor_type_m2 'camera'
+      core_method: &core_method_m2 "lift_splat_shoot"
 
-      grid_conf: &grid_conf_m6
+      grid_conf: &grid_conf_m2
         xbound: [-51.2, 51.2, 0.4]   # 限制x方向的范围并划分网格
         ybound: [-51.2, 51.2, 0.4]   # 限制y方向的范围并划分网格
         zbound: [-10, 10, 20.0]   # 限制z方向的范围并划分网格
         ddiscr: [2, 50, 48]
         mode: 'LID'
-      data_aug_conf: &data_aug_conf_m6
+      data_aug_conf: &data_aug_conf_m2
         resize_lim: [0.56, 0.61]
         final_dim: [336, 448]
         rot_lim: [-3.6, 3.6]
@@ -68,7 +69,7 @@ heter:
 fusion:
   core_method: 'intermediateheter'
   dataset: 'opv2v'
-  args: 
+  args:
     proj_first: false
     grid_conf: None # place-holder
     data_aug_conf: None # place-holder
@@ -135,7 +136,7 @@ model:
         num_filters: [ 64, 128, 256 ]
         upsample_strides: [ 1, 2, 4 ]
         num_upsample_filter: [ 128, 128, 128 ]
-  
+
       shrink_header:
         kernal_size: [ 3 ]
         stride: [ 2 ]
@@ -143,14 +144,14 @@ model:
         dim: [ 256 ]
         input_dim: 384 # 128 * 3
 
-    m6:
-      core_method: *core_method_m6
-      sensor_type: *sensor_type_m6
+    m2:
+      core_method: *core_method_m2
+      sensor_type: *sensor_type_m2
 
       encoder_args:
         anchor_number: *anchor_num
-        grid_conf: *grid_conf_m6
-        data_aug_conf: *data_aug_conf_m6
+        grid_conf: *grid_conf_m2
+        data_aug_conf: *data_aug_conf_m2
         img_downsample: 8
         img_features: &img_feature 128
         use_depth_gt: false
@@ -159,7 +160,7 @@ model:
 
       camera_mask_args:
         cav_lidar_range: *cav_lidar
-        grid_conf: *grid_conf_m6
+        grid_conf: *grid_conf_m2
 
       backbone_args:
         layer_nums: [ 3, 5, 8 ]
@@ -235,4 +236,3 @@ lr_scheduler:
   core_method: multistep #step, multistep and Exponential support
   gamma: 0.1
   step_size: [20, 40]
-

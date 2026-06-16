@@ -4,6 +4,7 @@
 
 
 import os
+import copy
 from collections import OrderedDict
 
 import numpy as np
@@ -14,6 +15,11 @@ from opencood.utils.transformation_utils import get_relative_transformation
 from opencood.utils.box_utils import create_bbx, project_box3d, nms_rotated
 from opencood.utils.camera_utils import indices_to_depth
 from sklearn.metrics import mean_squared_error
+
+
+def is_multiple_agents(output_dict):
+    """Return True when a model output is keyed by per-agent modality ids."""
+    return [(key[0] == 'm' or key[1:].isdigit()) for key in output_dict.keys()].count(True) != 0
 
 def inference_late_fusion(batch_data, model, dataset):
     """
@@ -117,60 +123,6 @@ def inference_no_fusion_w_uncertainty(batch_data, model, dataset):
                     "gt_box_tensor" : gt_box_tensor, \
                     "uncertainty_tensor" : uncertainty_tensor}
 
-    return return_dict
-
-
-def inference_early_fusion(batch_data, model, dataset):
-    """
-    Model inference for early fusion.
-
-    Parameters
-    ----------
-    batch_data : dict
-    model : opencood.object
-    dataset : opencood.EarlyFusionDataset
-
-    Returns
-    -------
-    pred_box_tensor : torch.Tensor
-        The tensor of prediction bounding box after NMS.
-    gt_box_tensor : torch.Tensor
-        The tensor of gt bounding box.
-    """
-    output_dict = OrderedDict()
-    cav_content = batch_data['ego']
-    output_dict['ego'] = model(cav_content)
-    
-    pred_box_tensor, pred_score, gt_box_tensor = \
-        dataset.post_process(batch_data,
-                             output_dict)
-    
-    return_dict = {"pred_box_tensor" : pred_box_tensor, \
-                    "pred_score" : pred_score, \
-                    "gt_box_tensor" : gt_box_tensor}
-    if "depth_items" in output_dict['ego']:
-        return_dict.update({"depth_items" : output_dict['ego']['depth_items']})
-    return return_dict
-
-
-def inference_intermediate_fusion(batch_data, model, dataset):
-    """
-    Model inference for early fusion.
-
-    Parameters
-    ----------
-    batch_data : dict
-    model : opencood.object
-    dataset : opencood.EarlyFusionDataset
-
-    Returns
-    -------
-    pred_box_tensor : torch.Tensor
-        The tensor of prediction bounding box after NMS.
-    gt_box_tensor : torch.Tensor
-        The tensor of gt bounding box.
-    """
-    return_dict = inference_early_fusion(batch_data, model, dataset)
     return return_dict
 
 
@@ -301,3 +253,168 @@ def get_cav_box(batch_data):
 
 
     return cav_box_np, agent_modality_list
+
+
+def inference_heter_late(batch_data, model, dataset, show_bev=False, infer_all=False):
+    if infer_all:
+        return inference_heter_all_late_fusion(batch_data, model, dataset)
+    return inference_heter_late_fusion(batch_data, model, dataset, show_bev=show_bev)
+
+
+def inference_heter_late_fusion(batch_data, model, dataset, show_bev=False):
+    output_dict = OrderedDict()
+    cav_content = batch_data['ego']
+    ego_modality = cav_content['agent_modality_list'][0]
+
+    if show_bev:
+        output_dict, ori_feat_dict, feat_tensor_dict, fused_feat_dict, feat_single, protocol_feat, protocol_fused_feature = (
+            model(cav_content, show_bev=show_bev)
+        )
+        fused_feat = fused_feat_dict[ego_modality]
+        feat_tensor = feat_tensor_dict[ego_modality]
+    else:
+        output_dict = model(cav_content)
+
+    pred_box_tensor, pred_score, gt_box_tensor = dataset.post_process(batch_data, output_dict, fusion='late')
+
+    return {
+        'pred_box_tensor': pred_box_tensor,
+        'pred_score': pred_score,
+        'gt_box_tensor': gt_box_tensor,
+        'ori_feat_dict': ori_feat_dict if show_bev else None,
+        'feat_tensor': feat_tensor if show_bev else None,
+        'fused_feat': fused_feat if show_bev else None,
+        'feat_single': feat_single if show_bev else None,
+        'protocol_feat': protocol_feat if show_bev else None,
+        'protocol_fused_feature': protocol_fused_feature if show_bev else None,
+        'ego_modality': ego_modality,
+    }
+
+
+def inference_heter_all_late_fusion(batch_data, model, dataset):
+    cav_content = batch_data['ego']
+    ego_modality = cav_content['agent_modality_list'][0]
+    output_dict = model(cav_content)
+    ret_list = []
+    pred_box_tensor, pred_score, gt_box_tensor = dataset.post_process(
+        batch_data, output_dict, fusion='late', agent_idx=0
+    )
+
+    return_dict = {
+        'pred_box_tensor': pred_box_tensor,
+        'pred_score': pred_score,
+        'gt_box_tensor': gt_box_tensor,
+        'ori_feat_dict': None,
+        'feat_tensor': None,
+        'fused_feat': None,
+        'feat_single': None,
+        'protocol_feat': None,
+        'protocol_fused_feature': None,
+        'ego_modality': ego_modality,
+    }
+    for _ in cav_content['agent_modality_list']:
+        ret_list.append(return_dict)
+
+    return ret_list
+
+
+def inference_early_fusion(batch_data, model, dataset, show_bev=False, protocol_result=False):
+    output_dict = OrderedDict()
+    cav_content = batch_data['ego']
+    ego_modality = cav_content['agent_modality_list'][0]
+
+    if show_bev:
+        o_dict, ori_feat_dict, feat_tensor_dict, fused_feat_dict, feat_single, protocol_feat, protocol_fused_feature = model(
+            cav_content, show_bev=show_bev
+        )
+        fused_feat = fused_feat_dict[ego_modality] if fused_feat_dict is not None else None
+        feat_tensor = None
+        if feat_tensor_dict is not None:
+            feat_tensor = feat_tensor_dict[ego_modality] if isinstance(feat_tensor_dict, dict) else feat_tensor_dict
+    else:
+        o_dict = model(cav_content)
+
+    if is_multiple_agents(o_dict):
+        if protocol_result:
+            o_dict = o_dict['m0']
+            batch_data['ego']['anchor_box'] = batch_data['ego']['anchor_box_dict']['m0']
+        else:
+            o_dict = o_dict[ego_modality]
+
+    output_dict['ego'] = o_dict
+    pred_box_tensor, pred_score, gt_box_tensor = dataset.post_process(batch_data, output_dict)
+
+    return_dict = {
+        'pred_box_tensor': pred_box_tensor,
+        'pred_score': pred_score,
+        'gt_box_tensor': gt_box_tensor,
+        'ori_feat_dict': ori_feat_dict if show_bev else None,
+        'feat_tensor': feat_tensor if show_bev else None,
+        'fused_feat': fused_feat if show_bev else None,
+        'feat_single': feat_single if show_bev else None,
+        'protocol_feat': protocol_feat if show_bev else None,
+        'protocol_fused_feature': protocol_fused_feature if show_bev else None,
+        'ego_modality': ego_modality,
+    }
+    if 'depth_items' in output_dict['ego']:
+        return_dict.update({'depth_items': output_dict['ego']['depth_items']})
+    return return_dict
+
+
+def inference_all_agents_early_fusion(batch_data, model, dataset, show_bev=False):
+    cav_content = batch_data['ego']
+    ego_modality = cav_content['agent_modality_list'][0]
+    if show_bev:
+        o_dict, ori_feat_dict, feat_tensor_dict, fused_feat_dict, feat_single, protocol_feat, protocol_fused_feature = model(
+            cav_content, show_bev=show_bev
+        )
+    else:
+        o_dict = model(cav_content)
+
+    ret_list = []
+    if is_multiple_agents(o_dict):
+        res = dataset.post_process(batch_data, o_dict)
+        for pred_box_tensor, pred_score, gt_box_tensor in res:
+            return_dict = {
+                'pred_box_tensor': pred_box_tensor,
+                'pred_score': pred_score,
+                'gt_box_tensor': gt_box_tensor,
+                'ori_feat_dict': ori_feat_dict if show_bev else None,
+                'feat_tensor': feat_tensor_dict if show_bev else None,
+                'fused_feat': fused_feat_dict if show_bev else None,
+                'feat_single': feat_single if show_bev else None,
+                'protocol_feat': protocol_feat if show_bev else None,
+                'protocol_fused_feature': protocol_fused_feature if show_bev else None,
+                'ego_modality': ego_modality,
+            }
+            ret_list.append(copy.deepcopy(return_dict))
+    else:
+        pred_box_tensor, pred_score, gt_box_tensor = dataset.post_process(batch_data, {'ego': o_dict})
+        return_dict = {
+            'pred_box_tensor': pred_box_tensor,
+            'pred_score': pred_score,
+            'gt_box_tensor': gt_box_tensor,
+            'ori_feat_dict': ori_feat_dict if show_bev else None,
+            'feat_tensor': feat_tensor_dict if show_bev else None,
+            'fused_feat': fused_feat_dict if show_bev else None,
+            'feat_single': feat_single if show_bev else None,
+            'protocol_feat': protocol_feat if show_bev else None,
+            'protocol_fused_feature': protocol_fused_feature if show_bev else None,
+            'ego_modality': ego_modality,
+        }
+        for _ in cav_content['agent_modality_list']:
+            ret_list.append(return_dict)
+
+    return ret_list
+
+
+def inference_intermediate_fusion(batch_data, model, dataset, infer_all=False, show_bev=False, protocol_result=False):
+    if infer_all:
+        return inference_all_agents_early_fusion(batch_data, model, dataset, show_bev=show_bev)
+    return inference_early_fusion(
+        batch_data,
+        model,
+        dataset,
+        show_bev=show_bev,
+        protocol_result=protocol_result,
+    )

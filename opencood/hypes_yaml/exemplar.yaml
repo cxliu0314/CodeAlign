@@ -12,12 +12,12 @@ train_params:
   max_cav: 5 # max agent number in a scene
 
 comm_range: 70
-input_source: ['lidar', 'camera', 'depth'] 
+input_source: ['lidar', 'camera', 'depth']
 # according to your modality setting, you choose data for loading
 # 'depth' is only viable with OPV2V-H dataset
 # 'camera' is not viable with V2X-Sim dataset
 
-label_type: 'lidar' # 'lidar' or 'camera'. 
+label_type: 'lidar' # 'lidar' or 'camera'.
 # 'lidar' includes more gt box than camera
 # when use heterogeneous dataloader, i.e., yaml['fusion']['core_method'] = 'intermediateheter' or 'lateheter'
 # agent will adopt its own label_type in training, depending on its modality
@@ -30,7 +30,7 @@ add_data_extension: ['bev_visibility.png'] # additional data extension for loadi
 
 
 heter: # heterogenous setting
-  assignment_path: "opencood/logs/heter_modality_assign/opv2v_4modality.json" 
+  assignment_path: "opencood/modality_assign/opv2v_4modality.json"
   ego_modality: &ego_modality "m1&m2&m3&m4" # agent types that are allowed to become ego, separated by '&'.
   lidar_channels_dict: # lidar channels for each agent type. If omitted, 64-channel lidar data are used for OPV2V.
     m3: 32
@@ -113,13 +113,13 @@ heter: # heterogenous setting
         Ncams: 4
 
 fusion:
-  core_method: 'intermediateheter' 
+  core_method: 'intermediateheter'
   # if 'heter' in yaml, 'intermediateheter' or 'lateheter' is supported
-  # if 'heter' not in yaml, 'intermediate', 'late' or 'early' is supported. 
+  # if 'heter' not in yaml, 'intermediate', 'late' or 'early' is supported.
   #     See those (old-style but also compatible) yaml in CoAlign's repo: https://github.com/yifanlu0227/CoAlign
   dataset: 'opv2v' # or 'v2xset', 'v2xsim', 'dairv2x'
-  args: 
-    proj_first: false # 'false' is one-round communciation. 'true' is two-round communication sending pose first (I think it's very unpractical) 
+  args:
+    proj_first: false # 'false' is one-round communciation. 'true' is two-round communication sending pose first (I think it's very unpractical)
     grid_conf: None # place-holder
     data_aug_conf: None # place-holder
 
@@ -162,9 +162,9 @@ postprocess:
 
 # network structure:
 # encoder_m1 -> backbone_m1 -> aligner_m1 --> fusion_backbone -> shrink_header -> heads
-# encoder_m2 -> backbone_m2 -> aligner_m2 -| 
-# encoder_m3 -> backbone_m3 -> aligner_m3 -| 
-# encoder_m4 -> backbone_m4 -> aligner_m4 -| 
+# encoder_m2 -> backbone_m2 -> aligner_m2 -|
+# encoder_m3 -> backbone_m3 -> aligner_m3 -|
+# encoder_m4 -> backbone_m4 -> aligner_m4 -|
 model:
   core_method: heter_pyramid_collab
   args:
@@ -190,7 +190,7 @@ model:
         layer_nums: [3]
         layer_strides: [2]
         num_filters: [64]
-  
+
       aligner_args: # see opencood/models/sub_modules/feature_alignnet.py
         core_method: identity
 
@@ -241,7 +241,7 @@ model:
         layer_strides: [1]
         num_filters: [64]
         inplanes: 128
-      
+
       aligner_args:
         core_method: identity
 
@@ -268,11 +268,11 @@ model:
         layer_strides: [2]
         num_filters: [64]
         inplanes: 128
-        
+
       aligner_args:
         core_method: identity
 
-    fusion_backbone: 
+    fusion_backbone:
       resnext: true
       layer_nums: [3, 5, 8]
       layer_strides: [1, 2, 2]
@@ -281,7 +281,7 @@ model:
       num_upsample_filter: [128, 128, 128]
       anchor_number: *anchor_num
 
-    shrink_header: 
+    shrink_header:
       kernal_size: [ 3 ]
       stride: [ 1 ]
       padding: [ 1 ]

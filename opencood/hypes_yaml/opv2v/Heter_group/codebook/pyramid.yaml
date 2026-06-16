@@ -1,4 +1,5 @@
-name: Encoder_PyramidFusion_DetLoss_Pyramid_m1m2
+# for single modality pretraining, without codebook.
+name: homo/m5
 root_dir: "dataset/OPV2V/train"
 validate_dir: "dataset/OPV2V/validate"
 test_dir: "dataset/OPV2V/test"
@@ -21,8 +22,8 @@ cav_lidar_range: &cav_lidar [-102.4, -102.4, -3, 102.4, 102.4, 1]
 heter:
   assignment_path: "opencood/modality_assign/opv2v_4modality.json"
   definition_path: "opencood/modality_assign/10modality_define.yaml"
-  ego_modality: &ego_modality ['m1','m2']
-  heter_group: [['m1','m2']]
+  ego_modality: &ego_modality ['m5']
+  heter_group: [['m5']]
   lidar_channels_dict:
     m4: 32
   mapping_dict:
@@ -96,17 +97,6 @@ model:
     fix_encoder: false
     fix_backend: false
 
-    # aligner:
-    #   core_method: 'resnet1x1'
-    #   args:
-    #     dim: 64
-    #     num_of_blocks: 8
-
-    # codebook:
-    #   seg_num: 1
-    #   dict_size: 16
-    #   r: 1
-
     supervise_single: true
 
     fusion: 
@@ -152,17 +142,10 @@ loss:
     pyramid:
       relative_downsample: [1, 2, 4]
       weight: [0.4, 0.2, 0.1]
-      
-    # codebook:
-    #   type: 'BalancedSimilarityLoss'
-    #   weight: 1.0
-    #   foreground_weight: 0.75
-    #   background_weight: 0.25
-
 
 optimizer:
   core_method: Adam
-  lr: 0.001
+  lr: 0.002
   args:
     eps: 1e-10
     weight_decay: 1e-4

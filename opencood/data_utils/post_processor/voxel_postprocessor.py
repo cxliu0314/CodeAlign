@@ -25,6 +25,14 @@ from opencood.utils.common_utils import limit_period
 class VoxelPostprocessor(BasePostprocessor):
     def __init__(self, anchor_params, train):
         super(VoxelPostprocessor, self).__init__(anchor_params, train)
+        if 'cav_lidar_range' not in self.params and 'cav_lidar_range' in self.params['anchor_args']:
+            self.params['cav_lidar_range'] = self.params['anchor_args']['cav_lidar_range']
+        if 'voxel_size' not in self.params:
+            self.params['voxel_size'] = [
+                self.params['anchor_args']['vw'],
+                self.params['anchor_args']['vh'],
+                self.params['anchor_args']['vd'],
+            ]
         self.anchor_num = self.params['anchor_args']['num']
 
     def generate_anchor_box(self):
@@ -205,7 +213,7 @@ class VoxelPostprocessor(BasePostprocessor):
         voxel_size = self.params['voxel_size'][0] * 2
         for box in gt_standup_2d:
             # x_min, y_min, x_max, y_max = box
-            # 坐标系不一样？xy位置不同的。。。无语
+            # different x y order...
             y_min, x_min, y_max, x_max = box
             x_start = int(np.floor((x_min + offset_x) / voxel_size))
             x_end = int(np.ceil((x_max + offset_x) / voxel_size))

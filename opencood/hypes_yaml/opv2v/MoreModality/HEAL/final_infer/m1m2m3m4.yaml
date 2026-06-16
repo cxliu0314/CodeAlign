@@ -19,8 +19,8 @@ cav_lidar_range: &cav_lidar [-102.4, -102.4, -3, 102.4, 102.4, 1]
 add_data_extension: ['bev_visibility.png']
 
 heter:
-  assignment_path: "opencood/logs/heter_modality_assign/opv2v_4modality.json" 
-  ego_modality: &ego_modality "m1&m2&m3&m4" # no use 
+  assignment_path: "opencood/modality_assign/opv2v_4modality.json"
+  ego_modality: &ego_modality "m1&m2&m3&m4" # no use
   lidar_channels_dict: # no use
     m3: 32
   mapping_dict: # no use
@@ -107,7 +107,7 @@ heter:
 fusion:
   core_method: 'intermediateheter'
   dataset: 'opv2v'
-  args: 
+  args:
     proj_first: false
     grid_conf: None # place-holder
     data_aug_conf: None # place-holder
@@ -173,7 +173,7 @@ model:
         layer_nums: [3]
         layer_strides: [2]
         num_filters: [64]
-  
+
       aligner_args:
         core_method: identity
 
@@ -228,7 +228,7 @@ model:
         layer_strides: [1]
         num_filters: [64]
         inplanes: 128
-  
+
       aligner_args:
         core_method: convnext
         spatial_align: false
@@ -259,7 +259,7 @@ model:
         layer_strides: [2]
         num_filters: [64]
         inplanes: 128
-  
+
       aligner_args:
         core_method: convnext
         spatial_align: false
@@ -267,7 +267,7 @@ model:
           num_of_blocks: 3
           dim: 64
 
-    fusion_backbone: 
+    fusion_backbone:
       resnext: true
       layer_nums: [3, 5, 8]
       layer_strides: [1, 2, 2]
@@ -276,7 +276,7 @@ model:
       num_upsample_filter: [128, 128, 128]
       anchor_number: *anchor_num
 
-    shrink_header: 
+    shrink_header:
       kernal_size: [ 3 ]
       stride: [ 1 ]
       padding: [ 1 ]

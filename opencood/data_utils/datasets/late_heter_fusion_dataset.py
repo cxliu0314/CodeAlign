@@ -334,6 +334,9 @@ def getLateheterFusionDataset(cls):
             batch : dict
                 Reformatted batch.
             """
+            batch = [sample for sample in batch if sample is not None]
+            if not batch:
+                return None
             # during training, we only care about ego.
             output_dict = {'ego': {}}
 

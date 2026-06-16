@@ -1,4 +1,5 @@
-name: _refine/intra_group/m1m6_16_fixenc_aligner_js
+# for code space formation of intra-group heterogeneous setting, with pyramid fusion and fix encoder aligner, and add codebook loss
+name: intra_group/m1m6_16_fixenc_aligner
 root_dir: "dataset/OPV2V/train"
 validate_dir: "dataset/OPV2V/validate"
 test_dir: "dataset/OPV2V/test"
@@ -151,7 +152,7 @@ loss:
       weight: 0.2
       args: *dir_args
     depth:
-      weight: 1
+      weight: 1.0
     pyramid:
       relative_downsample: [1, 2, 4]
       weight: [0.4, 0.2, 0.1]
@@ -170,16 +171,16 @@ loss:
       #   pool_size: 9
       # cosine:
       #   weight: 1
-      # l2:
-      #   weight: 0.1
+      l2:
+        weight: 0.1
       # smoothl1:
       #   weight: 0.1
       # mmd:
       #   weight: 5
       # coral:
       #   weight: 1000
-      js:
-        weight: 10
+      # js:
+      #   weight: 10
 
 optimizer:
   core_method: Adam

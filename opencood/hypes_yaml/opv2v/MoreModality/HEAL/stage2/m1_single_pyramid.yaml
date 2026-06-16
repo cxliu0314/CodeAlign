@@ -17,7 +17,7 @@ label_type: 'lidar'
 cav_lidar_range: &cav_lidar [-96, -48, -3, 96, 48, 1] # single-agent training can use a smaller range to save time
 
 heter:
-  assignment_path: "opencood/logs/heter_modality_assign/opv2v_4modality.json" 
+  assignment_path: "opencood/modality_assign/opv2v_4modality.json"
   ego_modality: &ego_modality "m1"
   lidar_channels_dict:
     m3: 32
@@ -46,7 +46,7 @@ heter:
 fusion:
   core_method: 'lateheter'
   dataset: 'opv2v'
-  args: 
+  args:
     proj_first: false
     grid_conf: None # place-holder
     data_aug_conf: None # place-holder
@@ -103,7 +103,7 @@ model:
     ego_modality: *ego_modality
     lidar_range: *cav_lidar
     fix_encoder: False
-    
+
     m1:
       core_method: *core_method_m1
       sensor_type: *sensor_type_m1
@@ -123,7 +123,7 @@ model:
         layer_nums: [3]
         layer_strides: [2]
         num_filters: [64]
-  
+
       aligner_args:
         core_method: convnext
         spatial_align: false
@@ -131,7 +131,7 @@ model:
           num_of_blocks: 3
           dim: 64
 
-    fusion_backbone: 
+    fusion_backbone:
       resnext: true
       layer_nums: [3, 5, 8]
       layer_strides: [1, 2, 2]
@@ -140,7 +140,7 @@ model:
       num_upsample_filter: [128, 128, 128]
       anchor_number: *anchor_num
 
-    shrink_header: 
+    shrink_header:
       kernal_size: [ 3 ]
       stride: [ 1 ]
       padding: [ 1 ]

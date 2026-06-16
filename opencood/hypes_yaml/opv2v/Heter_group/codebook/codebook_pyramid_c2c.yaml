@@ -1,4 +1,5 @@
-name: _refine/translation/D2C_m7_to_m16
+# for code space translation, only train translator.
+name: translation/D2C_m7_to_m16
 root_dir: "dataset/OPV2V/train"
 validate_dir: "dataset/OPV2V/validate"
 test_dir: "dataset/OPV2V/test"
@@ -98,9 +99,6 @@ model:
     only_train_translator: true
     supervise_single: true
     
-    # only_train_embedding: false
-    # translator_path: '/GPFS/data/changxingliu/HEAL/opencood/logs/C2C_EmbCat_ConvNeXT3_Codebook16_m2_m1m3_2025_09_07_19_18_26/net_epoch_bestval_at26.pth'
-
     # ego group, aligner + codebook
     use_coded_feature: false
     use_codemap: false
@@ -114,7 +112,6 @@ model:
       m1: '/GPFS/data/changxingliu/HEAL/opencood/logs/_refine/intra_group/m1m6_16_fixenc_aligner_L1_2025_10_17_03_09_47/net_epoch_bestval_at48.pth'
       m7: '/GPFS/data/changxingliu/HEAL/opencood/logs/_refine/intra_group/m2m7_16_fixenc_aligner_L1_2025_11_06_01_33_00/net_epoch_bestval_at32.pth'
       m6: '/GPFS/data/changxingliu/HEAL/opencood/logs/_refine/intra_group/m1m6_16_fixenc_aligner_L1_2025_10_17_03_09_47/net_epoch_bestval_at48.pth'
-      # m7: '/GPFS/data/changxingliu/HEAL/opencood/logs/_refine/single_group_formation/m7_16_fixenc_aligner_fixback_2025_11_04_02_37_22/net_epoch_bestval_at8.pth'
     # ego_codebook:
     #   seg_num: 1
     #   dict_size: 16
@@ -126,10 +123,8 @@ model:
     backend: 
       m1: '/GPFS/data/changxingliu/HEAL/opencood/logs/_refine/intra_group/m1m6_16_fixenc_aligner_L1_2025_10_17_03_09_47/net_epoch_bestval_at48.pth'
       m6: '/GPFS/data/changxingliu/HEAL/opencood/logs/_refine/intra_group/m1m6_16_fixenc_aligner_L1_2025_10_17_03_09_47/net_epoch_bestval_at48.pth'
-      # m1: '/GPFS/data/changxingliu/HEAL/opencood/logs/_refine/single_group_formation/m1_16_fixenc_aligner_fixback_2025_10_27_21_31_53/net_epoch_bestval_at42.pth'
       m2: '/GPFS/data/changxingliu/HEAL/opencood/logs/_refine/single_group_formation/m2_16_fixenc_aligner_fixback_2025_11_02_23_45_58/net_epoch_bestval_at42.pth'
       m3: '/GPFS/data/changxingliu/HEAL/opencood/logs/_refine/single_group_formation/m3_16_fixenc_aligner_fixback_2025_11_02_23_49_56/net_epoch_bestval_at40.pth'
-      # m6: '/GPFS/data/changxingliu/HEAL/opencood/logs/_refine/single_group_formation/m6_16_fixenc_aligner_fixback_2025_11_02_23_26_15/net_epoch_bestval_at14.pth'
       m7: '/GPFS/data/changxingliu/HEAL/opencood/logs/_refine/single_group_formation/m7_16_fixenc_aligner_fixback_2025_11_04_02_37_22/net_epoch_bestval_at8.pth'
 
     codebook:

@@ -196,24 +196,6 @@ class HeterCodebookPyramidSharedHead(nn.Module):
         return split_x
             
     def stage2(self):
-        # for p in self.multi_channel_compressor.parameters():
-        #     p.requires_grad_(False)
-        # for p in self.pyramid_backbone.parameters():
-        #     p.requires_grad_(False)
-        # for p in self.shrink_conv.parameters():
-        #     p.requires_grad_(False)
-        # for p in self.cls_head_single.parameters():
-        #     p.requires_grad_(False)
-        # for p in self.reg_head_single.parameters():
-        #     p.requires_grad_(False)
-        # for p in self.dir_head_single.parameters():
-        #     p.requires_grad_(False)
-        # for p in self.cls_head.parameters():
-        #     p.requires_grad_(False)
-        # for p in self.reg_head.parameters():
-        #     p.requires_grad_(False)
-        # for p in self.dir_head.parameters():
-        #     p.requires_grad_(False)
         for modality_name in self.modality_name_list:
             for p in eval(f"self.encoder_{modality_name}").parameters():
                 p.requires_grad_(False)
@@ -232,7 +214,7 @@ class HeterCodebookPyramidSharedHead(nn.Module):
             for p in self.compressor.parameters():
                 p.requires_grad_(True)
 
-    def forward(self, data_dict, save_path='', i=0, dis_path='/GPFS/data/changxingliu/HEAL/opencood/logs/test'):
+    def forward(self, data_dict, save_path='', i=0, dis_path):
         output_dict = {'pyramid': 'collab'}
         agent_modality_list = data_dict['agent_modality_list'] 
         affine_matrix = normalize_pairwise_tfm(data_dict['pairwise_t_matrix'], self.H, self.W, self.fake_voxel_size)
@@ -384,7 +366,7 @@ class HeterCodebookPyramidSharedHead(nn.Module):
         """
         box_preds = box_preds.permute(0, 2, 3, 1).contiguous()
         
-        batch, H, W, code_size = box_preds.size()   ## code_size 表示的是预测的尺寸
+        batch, H, W, code_size = box_preds.size()
         
         box_preds = box_preds.reshape(batch, H*W, code_size)
 
@@ -409,16 +391,9 @@ class HeterCodebookPyramidSharedHead(nn.Module):
         xs = xs.view(batch, -1, 1) + batch_reg[:, :, 0:1]
         ys = ys.view(batch, -1, 1) + batch_reg[:, :, 1:2]
 
-        xs = xs * self.out_size_factor * self.voxel_size[0] + self.cav_lidar_range[0]   ## 基于feature_map 的size求解真实的坐标
+        xs = xs * self.out_size_factor * self.voxel_size[0] + self.cav_lidar_range[0]
         ys = ys * self.out_size_factor * self.voxel_size[1] + self.cav_lidar_range[1]
 
 
         batch_box_preds = torch.cat([xs, ys, batch_hei, batch_dim, rot], dim=2)
-        # batch_box_preds = batch_box_preds.reshape(batch, H, W, batch_box_preds.shape[-1])
-        # batch_box_preds = batch_box_preds.permute(0, 3, 1, 2).contiguous()
-
-        # batch_box_preds_temp = torch.cat([xs, ys, batch_hei, batch_dim, rot], dim=1)
-        # box_preds = box_preds.permute(0, 3, 1, 2).contiguous()
-
-        # batch_cls_preds = cls_preds.view(batch, H*W, -1)
         return cls_preds, batch_box_preds

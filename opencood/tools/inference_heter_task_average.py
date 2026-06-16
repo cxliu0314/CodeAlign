@@ -18,7 +18,7 @@ import open3d as o3d
 from torch.utils.data import DataLoader, Subset
 import numpy as np
 import opencood.hypes_yaml.yaml_utils as yaml_utils
-from opencood.tools import train_utils, inference_utils_stamp
+from opencood.tools import train_utils, inference_utils
 from opencood.data_utils.datasets import build_dataset
 from opencood.utils import eval_utils
 from opencood.visualization import vis_utils, my_vis, simple_vis_stamp
@@ -39,6 +39,8 @@ def test_parser():
         "--fusion_method", type=str, default="intermediate", help="no, no_w_uncertainty, late, early or intermediate"
     )
     parser.add_argument("--save_vis_interval", type=int, default=40, help="interval of saving visualization")
+    parser.add_argument("--no_vis", action="store_true", help="disable visualization output")
+    parser.add_argument("--output_dir", type=str, default="", help="directory for eval/visualization outputs")
     parser.add_argument(
         "--save_npy", action="store_true", help="whether to save prediction and gt result" "in npy file"
     )
@@ -71,6 +73,8 @@ def test_parser():
 
 def main():
     opt = test_parser()
+    output_dir = opt.output_dir or opt.model_dir
+    os.makedirs(output_dir, exist_ok=True)
 
     assert opt.fusion_method in ["late", "late_heter", "early", "intermediate", "no", "no_w_uncertainty", "single"]
     # if opt.all:
@@ -249,11 +253,11 @@ def main():
                 batch_data = train_utils.to_device(batch_data, device)
 
                 if opt.fusion_method == "late":
-                    infer_result = inference_utils_stamp.inference_late_fusion(batch_data, model, opencood_dataset)
+                    infer_result = inference_utils.inference_late_fusion(batch_data, model, opencood_dataset)
                 elif opt.fusion_method == "early":
-                    infer_result = inference_utils_stamp.inference_early_fusion(batch_data, model, opencood_dataset)
+                    infer_result = inference_utils.inference_early_fusion(batch_data, model, opencood_dataset)
                 elif opt.fusion_method == "intermediate":
-                    infer_result = inference_utils_stamp.inference_intermediate_fusion(
+                    infer_result = inference_utils.inference_intermediate_fusion(
                         batch_data,
                         model,
                         opencood_dataset,
@@ -262,13 +266,13 @@ def main():
                         protocol_result=opt.protocol_result,
                     )
                 elif opt.fusion_method == "no":
-                    infer_result = inference_utils_stamp.inference_no_fusion(batch_data, model, opencood_dataset)
+                    infer_result = inference_utils.inference_no_fusion(batch_data, model, opencood_dataset)
                 elif opt.fusion_method == "no_w_uncertainty":
-                    infer_result = inference_utils_stamp.inference_no_fusion_w_uncertainty(batch_data, model, opencood_dataset)
+                    infer_result = inference_utils.inference_no_fusion_w_uncertainty(batch_data, model, opencood_dataset)
                 elif opt.fusion_method == "single":
-                    infer_result = inference_utils_stamp.inference_no_fusion(batch_data, model, opencood_dataset, single_gt=True)
+                    infer_result = inference_utils.inference_no_fusion(batch_data, model, opencood_dataset, single_gt=True)
                 elif opt.fusion_method == "late_heter":
-                    infer_result = inference_utils_stamp.inference_heter_late(
+                    infer_result = inference_utils.inference_heter_late(
                         batch_data,
                         model,
                         opencood_dataset,
@@ -285,7 +289,7 @@ def main():
                     infer_result = [infer_result]
 
                 for idx, infer_result_single in enumerate(infer_result):
-                    work_dir = opt.model_dir
+                    work_dir = output_dir
                     eval_detection_result(
                         opt,
                         agent_modality_list,
@@ -303,7 +307,7 @@ def main():
 
             torch.cuda.empty_cache()
         
-        ap30, ap50, ap70 = eval_utils.eval_final_results(result_stat, opt.model_dir, opt.infer_info)
+        ap30, ap50, ap70 = eval_utils.eval_final_results(result_stat, output_dir, opt.infer_info)
         result_list.append([ap30, ap50, ap70])
 
     result_array = np.array(result_list)
@@ -358,7 +362,7 @@ def eval_detection_result(
         npy_save_path = os.path.join(work_dir, "npy")
         if not os.path.exists(npy_save_path):
             os.makedirs(npy_save_path)
-        inference_utils_stamp.save_prediction_gt(
+        inference_utils.save_prediction_gt(
             pred_box_tensor, gt_box_tensor, batch_data["ego"]["origin_lidar"][0], i, npy_save_path
         )
 
@@ -366,10 +370,10 @@ def eval_detection_result(
         infer_result_single.update({"score_tensor": pred_score})
 
     if getattr(opencood_dataset, "heterogeneous", False):
-        cav_box_np, agent_modality_list = inference_utils_stamp.get_cav_box(batch_data)
+        cav_box_np, agent_modality_list = inference_utils.get_cav_box(batch_data)
         infer_result_single.update({"cav_box_np": cav_box_np, "agent_modality_list": agent_modality_list})
 
-    if (i % opt.save_vis_interval == 0) and (pred_box_tensor is not None or gt_box_tensor is not None):
+    if (not opt.no_vis) and (i % opt.save_vis_interval == 0) and (pred_box_tensor is not None or gt_box_tensor is not None):
         vis_save_path_root = os.path.join(work_dir, f'vis_{opt.infer_info}_{pair[0]}_{pair[1]}')
         if not os.path.exists(vis_save_path_root):
             os.makedirs(vis_save_path_root)

@@ -45,6 +45,10 @@ def train_parser():
     return opt
 
 
+def get_validation_suffix(output_dict):
+    return 'val' if 'cls_predsval' in output_dict else ''
+
+
 def main():
     import sys
     class Tee(object):
@@ -154,9 +158,13 @@ def main():
     # define the loss
     criterion = train_utils.create_loss(hypes)
 
-    # optimizer setup
-    # optimizer = train_utils.setup_optimizer(hypes, model_without_ddp)
-    optimizer = train_utils.setup_optimizer_codebook(hypes, model_without_ddp)
+    # Optimizer setup. CodeAlign/codebook models need a separate codebook
+    # learning-rate group; baselines should keep the standard OpenCOOD path.
+    model_core_method = hypes.get('model', {}).get('core_method', '')
+    if 'codebook' in model_core_method or 'codebook_lr_rate' in hypes.get('optimizer', {}):
+        optimizer = train_utils.setup_optimizer_codebook(hypes, model_without_ddp)
+    else:
+        optimizer = train_utils.setup_optimizer(hypes, model_without_ddp)
     
     scheduler = train_utils.setup_lr_schedular(hypes, optimizer, init_epoch=init_epoch)
 
@@ -169,6 +177,8 @@ def main():
 
     print('Training start')
     epoches = hypes['train_params']['epoches']
+    max_train_batches = hypes['train_params'].get('max_train_batches')
+    max_val_batches = hypes['train_params'].get('max_val_batches')
     supervise_single_flag = False if not hasattr(opencood_train_dataset, "supervise_single") else opencood_train_dataset.supervise_single
     # used to help schedule learning rate
 
@@ -178,6 +188,8 @@ def main():
             valid_ave_loss = []
             with torch.no_grad():
                 for i, batch_data in enumerate(val_loader):
+                    if max_val_batches is not None and i >= max_val_batches:
+                        break
                     if batch_data is None: continue
                     model.zero_grad()
                     optimizer.zero_grad()
@@ -185,9 +197,10 @@ def main():
                     batch_data = train_utils.to_device(batch_data, device)
                     batch_data['ego']['epoch'] = epoch
                     ouput_dict = model(batch_data['ego'])
-                    final_loss = criterion(ouput_dict, batch_data['ego']['label_dict'], suffix='val')
+                    val_suffix = get_validation_suffix(ouput_dict)
+                    final_loss = criterion(ouput_dict, batch_data['ego']['label_dict'], suffix=val_suffix)
                     valid_ave_loss.append(final_loss.item())
-                    criterion.logging(epoch, i, len(val_loader), None, suffix="val")
+                    criterion.logging(epoch, i, len(val_loader), None, suffix=val_suffix)
             lowest_val_loss = statistics.mean(valid_ave_loss)
             print('At epoch %d, the validation loss is %f' % (epoch, lowest_val_loss))
 
@@ -203,6 +216,8 @@ def main():
         except:
             print("No model_train_init function")
         for i, batch_data in enumerate(train_loader):
+            if max_train_batches is not None and i >= max_train_batches:
+                break
             if batch_data is None or batch_data['ego']['object_bbx_mask'].sum()==0:
                 continue
             model.zero_grad()
@@ -248,6 +263,8 @@ def main():
 
             with torch.no_grad():
                 for i, batch_data in enumerate(val_loader):
+                    if max_val_batches is not None and i >= max_val_batches:
+                        break
                     if batch_data is None:
                         continue
                     model.zero_grad()
@@ -258,11 +275,15 @@ def main():
                     batch_data['ego']['epoch'] = epoch
                     ouput_dict = model(batch_data['ego'])
 
+                    val_suffix = get_validation_suffix(ouput_dict)
                     final_loss = criterion(ouput_dict,
-                                           batch_data['ego']['label_dict'], suffix='val')
+                                           batch_data['ego']['label_dict'], suffix=val_suffix)
                     valid_ave_loss.append(final_loss.item())
-                    criterion.logging(epoch, i, len(val_loader), None, suffix="val")
+                    criterion.logging(epoch, i, len(val_loader), None, suffix=val_suffix)
 
+            if not valid_ave_loss:
+                print('No valid validation batches; skip validation metrics.')
+                continue
             valid_ave_loss = statistics.mean(valid_ave_loss)
             print('At epoch %d, the validation loss is %f' % (epoch,
                                                               valid_ave_loss))
@@ -289,7 +310,7 @@ def main():
     # dist.barrier()  # 其他进程等待主进程保存完成
 
     if opt.rank == 0:
-        run_test = True
+        run_test = not hypes['train_params'].get('skip_post_train_eval', False)
         
         # ddp training may leave multiple bestval
         bestval_model_list = glob.glob(os.path.join(saved_path, "net_epoch_bestval_at*.pth"))

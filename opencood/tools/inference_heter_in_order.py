@@ -42,6 +42,12 @@ def test_parser():
                         help='no, no_w_uncertainty, late, early or intermediate')
     parser.add_argument('--save_vis_interval', type=int, default=40,
                         help='interval of saving visualization')
+    parser.add_argument('--no_vis', action='store_true',
+                        help='disable visualization output; useful for read-only checkpoint dirs')
+    parser.add_argument('--output_dir', type=str, default='',
+                        help='directory for eval/visualization outputs; defaults to model_dir')
+    parser.add_argument('--legacy_model_init', action='store_true',
+                        help='use train_utils.create_model(hypes), matching the historical czc inference entry')
     parser.add_argument('--save_npy', action='store_true',
                         help='whether to save prediction and gt result'
                              'in npy file')
@@ -61,6 +67,8 @@ def test_parser():
 
 def main():
     opt = test_parser()
+    output_dir = opt.output_dir or opt.model_dir
+    os.makedirs(output_dir, exist_ok=True)
 
     assert opt.fusion_method in ['late', 'early', 'intermediate', 'no', 'no_w_uncertainty', 'single'] 
 
@@ -142,7 +150,10 @@ def main():
         print("Dataset Building")
         print(f"Noise Added: {pos_std}/{rot_std}/{pos_mean}/{rot_mean}.")
         hypes.update({"noise_setting": noise_setting})
-    model = train_utils.create_model(hypes, train_flag=False)
+    if opt.legacy_model_init:
+        model = train_utils.create_model(hypes)
+    else:
+        model = train_utils.create_model(hypes, train_flag=False)
     # we assume gpu is necessary
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -220,24 +231,24 @@ def main():
         for i, batch_data in enumerate(data_loader):
             # we can just save the batch_data to file. For perfomance test.
             # intermediate dataset
-            # command: CUDA_VISIBLE_DEVICES=1 python opencood/tools/inference_heter_in_order.py --model_dir opencood/logs_czc/opv2v/Heal/noise_infer/m1m7m2 --range 102.4,102.4 --use_cav [3] --noise 0.2
+            # command: CUDA_VISIBLE_DEVICES=1 python opencood/tools/inference_heter_in_order.py --model_dir opencood/logs/opv2v/Heal/noise_infer/m1m7m2 --range 102.4,102.4 --use_cav [3] --noise 0.2
             # import pickle
             # print(batch_data['ego']['agent_modality_list'])
             # collabortor = "".join(batch_data['ego']['agent_modality_list'])
-            # save_dir = f"opencood/logs_czc/FLOPs_calc/{collabortor}_online"
+            # save_dir = f"opencood/logs/FLOPs_calc/{collabortor}_online"
             # with open(os.path.join(save_dir, 'input.pkl'), 'wb') as f:
             #     pickle.dump(batch_data, f)
             # break
 
             # late fusion dataset
             # command:  
-            # python opencood/tools/inference_heter_in_order.py --model_dir opencood/logs_czc/opv2v/latefusion/m1m2m7_noise --fusion_method late --use_cav [1] --range 102.4,102.4 --noise 1.0
-            # python opencood/tools/inference_heter_task_average.py --model_dir opencood/logs_czc/opv2v/Heal/final_infer/m1m7m2m6 --range 102.4,102.4
+            # python opencood/tools/inference_heter_in_order.py --model_dir opencood/logs/opv2v/latefusion/m1m2m7_noise --fusion_method late --use_cav [1] --range 102.4,102.4 --noise 1.0
+            # python opencood/tools/inference_heter_task_average.py --model_dir opencood/logs/opv2v/Heal/final_infer/m1m7m2m6 --range 102.4,102.4
             # import pickle
             # for i_, (cav_id, cav_content) in enumerate(batch_data.items()):
             #     modality_name = cav_content['modality_name']
             #     print(cav_id, modality_name)
-            #     save_dir = f"opencood/logs_czc/FLOPs_calc/{modality_name}_single"
+            #     save_dir = f"opencood/logs/FLOPs_calc/{modality_name}_single"
             #     with open(os.path.join(save_dir, 'input.pkl'), 'wb') as f:
             #         pickle.dump({'ego':cav_content}, f)
             #     if i_ >= 4:
@@ -300,8 +311,8 @@ def main():
                     infer_result.update({"cav_box_np": cav_box_np, \
                                         "agent_modality_list": agent_modality_list})
 
-                if (i % opt.save_vis_interval == 0) and (pred_box_tensor is not None or gt_box_tensor is not None):
-                    vis_save_path_root = os.path.join(opt.model_dir, f'vis_{infer_info}')
+                if (not opt.no_vis) and (i % opt.save_vis_interval == 0) and (pred_box_tensor is not None or gt_box_tensor is not None):
+                    vis_save_path_root = os.path.join(output_dir, f'vis_{infer_info}')
                     if not os.path.exists(vis_save_path_root):
                         os.makedirs(vis_save_path_root)
 
@@ -329,7 +340,9 @@ def main():
                         pcd_modality=pcd_modality,
                     )
 
-                    vis_feature(batch_data, model, vis_save_path_root, i)
+                    # Feature visualization is only supported by CodeAlign
+                    # translator models, not by legacy late-fusion baselines.
+                    # vis_feature(batch_data, model, vis_save_path_root, i)
                     # simple_vis.visualize(infer_result,
                     #                     batch_data['ego'][
                     #                         'origin_lidar'][0],
@@ -340,7 +353,7 @@ def main():
             torch.cuda.empty_cache()
 
         _, ap50, ap70 = eval_utils.eval_final_results(result_stat,
-                                    opt.model_dir, infer_info)
+                                    output_dir, infer_info)
 
 
 

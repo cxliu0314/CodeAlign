@@ -35,11 +35,6 @@ class HeterCodebookSharedHeadReorderC2C(nn.Module):
         self.args = args
         self.train_flag = train_flag
 
-        ### add by czc 用于忽略部分模型 与forward配套
-        ignored_modality = set(args.get("ignored_modality", []))
-        modality_name_list = list(args.keys() - ignored_modality)
-        ### 
-
         modality_name_list = [x for x in modality_name_list if x.startswith("m") and x[1:].isdigit()] 
         self.modality_name_list = modality_name_list
         
@@ -271,45 +266,7 @@ class HeterCodebookSharedHeadReorderC2C(nn.Module):
         agent_modality_list = data_dict['agent_modality_list'] 
         record_len = data_dict['record_len'] 
 
-
-        ### add by czc 因为 需要添加ignore部分模型的部分 所以需要重新计算 index 用于排除 被ignore的模型 from stamp:
-        # 这里与 line 38配套
-        pairwise_t_matrix = data_dict["pairwise_t_matrix"]
-        pairwise_t_matrix_new = torch.zeros_like(pairwise_t_matrix)
-        agent_modality_list_filtered = []
-        record_len_filtered = []
-        cur = 0
-        count = 0
-        ptr = 0
-        indices = []
-        for m in agent_modality_list:
-            if m in self.modality_name_list:
-                agent_modality_list_filtered.append(m)
-                count += 1
-                indices.append(cur)
-            cur += 1
-            if record_len[ptr] == cur:
-                record_len_filtered.append(count)
-                if len(indices) > 0:
-                    for i in range(len(indices)):
-                        for j in range(len(indices)):
-                            pairwise_t_matrix_new[ptr][i][j] = pairwise_t_matrix[ptr][indices[i]][indices[j]]
-                cur = 0
-                count = 0
-                ptr += 1
-                indices = []
-        pairwise_t_matrix = pairwise_t_matrix_new
-        affine_matrix = normalize_pairwise_tfm(pairwise_t_matrix, self.H, self.W, self.fake_voxel_size)
-        record_len = torch.tensor(record_len_filtered)
-        agent_modality_list = agent_modality_list_filtered
-
-        # 替换掉了这个部分：
-        # affine_matrix = normalize_pairwise_tfm(data_dict['pairwise_t_matrix'], self.H, self.W, self.fake_voxel_size)
-        ##### 
-
-        
-
-
+        affine_matrix = normalize_pairwise_tfm(data_dict['pairwise_t_matrix'], self.H, self.W, self.fake_voxel_size)
         print(agent_modality_list)
         modality_count_dict = Counter(agent_modality_list)
         modality_feature_dict = {}        

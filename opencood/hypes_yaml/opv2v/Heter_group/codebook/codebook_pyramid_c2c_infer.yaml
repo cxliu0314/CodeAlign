@@ -1,3 +1,4 @@
+# for inference, assign modality in order, and load the translator and backbone of each modality.
 name: final/inter/C2C_m67_m12
 root_dir: "dataset/OPV2V/train"
 validate_dir: "dataset/OPV2V/validate"
@@ -18,6 +19,7 @@ add_data_extension: ['bev_visibility.png']
 
 cav_lidar_range: &cav_lidar [-102.4, -102.4, -3, 102.4, 102.4, 1]
 
+# for inference, the modality assignment is different, we assign modality according to the order of cavs in each sample, which is more reasonable for inference.
 heter:
   assignment_path: "opencood/modality_assign/opv2v_4modality_in_order.json"
   definition_path: "opencood/modality_assign/10modality_define_codebook16.yaml"

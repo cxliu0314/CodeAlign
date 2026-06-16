@@ -1,4 +1,5 @@
-name: _refine/single_group_formation/m1_64_fixenc_aligner_fixback
+# for code space formation of single modality.
+name: single_group_formation/m1_64_fixenc_aligner_fixback
 root_dir: "dataset/OPV2V/train"
 validate_dir: "dataset/OPV2V/validate"
 test_dir: "dataset/OPV2V/test"
@@ -151,7 +152,7 @@ loss:
       weight: 0.2
       args: *dir_args
     depth:
-      weight: 1
+      weight: 1.0
     pyramid:
       relative_downsample: [1, 2, 4]
       weight: [0.4, 0.2, 0.1]
@@ -162,7 +163,7 @@ optimizer:
   args:
     eps: 1e-10
     weight_decay: 1e-4
-  # codebook_lr_rate: 0 # codebook learning rate is 0.1 times the main model's learning rate
+  # codebook_lr_rate: 0.1 # codebook learning rate is 0.1 times the main model's learning rate
 
 lr_scheduler:
   core_method: multistep #step, multistep and Exponential support

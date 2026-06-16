@@ -9,7 +9,7 @@ import importlib
 import sys
 import torch
 import time
-# command: CUDA_VISIBLE_DEVICES=0 python opencood/tools/profiler/params_flops_multi.py --model_dir opencood/logs_czc/opv2v/Heal/final_infer/m1m7m2 --range 102.4,102.4 --use_cav [3]
+# command: CUDA_VISIBLE_DEVICES=0 python opencood/tools/profiler/params_flops_multi.py --model_dir opencood/logs/opv2v/Heal/final_infer/m1m7m2 --range 102.4,102.4 --use_cav [3]
 def train_parser():
     parser = argparse.ArgumentParser(description="Profiler.")
     parser.add_argument("--hypes_yaml", "-y", type=str, required=True,
@@ -41,7 +41,7 @@ def main():
             parser_func = func
     hypes = parser_func(hypes)
     model = train_utils.create_model(hypes)
-    
+
     if opt.half:
         output_file = opt.hypes_yaml.replace('config.yaml', 'config_flops_multi_half.txt')
     else:
@@ -54,13 +54,13 @@ def main():
             input_data_file = f"opencood/logs_HEAL/FLOPS_calc/MoreAgents_m1/input_half_{use_cav}.pkl"
         else:
             input_data_file = f"opencood/logs_HEAL/FLOPS_calc/MoreAgents_m1/input_{use_cav}.pkl"
-        
+
         with open(input_data_file, 'rb') as f:
             input_data = pickle.load(f)
         model.eval()
 
         flops = FlopCountAnalysis(model, input_data['ego'])
-        
+
         print("Use cav: ", use_cav)
         print("Range: ", new_cav_range)
         print("Config: ", opt.hypes_yaml)
@@ -68,7 +68,7 @@ def main():
         print("Device: ", torch.cuda.get_device_name(0))
 
         flop_analysis_list.append(flop_count_table(flops))
-        
+
         print("###########################################################")
 
     with open(output_file, 'w') as f:
@@ -88,4 +88,4 @@ def main():
 if __name__ == "__main__":
     main()
 
- 
+

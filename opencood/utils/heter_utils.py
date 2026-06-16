@@ -228,7 +228,7 @@ class Adaptor_group:
         return lidar_file_path
 
 
-def assign_modality_4(root_dir="dataset/OPV2V", output_path="opencood/logs/heter_modality_assign/opv2v_4modality.json"):
+def assign_modality_4(root_dir="dataset/OPV2V", output_path="opencood/modality_assign/opv2v_4modality.json"):
     np.random.seed(303)
     splits = ['train', 'test', 'validate']
     scenario_cav_modality_dict = OrderedDict()
@@ -255,7 +255,7 @@ def assign_modality_4(root_dir="dataset/OPV2V", output_path="opencood/logs/heter
         json.dump(scenario_cav_modality_dict, f, indent=4, sort_keys=True)
 
 
-def assign_modality_4_in_order(root_dir="dataset/OPV2V", output_path="opencood/logs/heter_modality_assign/opv2v_4modality_in_order.json"):
+def assign_modality_4_in_order(root_dir="dataset/OPV2V", output_path="opencood/modality_assign/opv2v_4modality_in_order.json"):
     """
         We assign each cav with a modality in order. Use m1m2m3m4 circularly
         cav1 -> m1
@@ -295,4 +295,4 @@ def assign_modality_4_in_order(root_dir="dataset/OPV2V", output_path="opencood/l
 if __name__ == "__main__":
     # assign_modality()
     # assign_modality_4_in_order()
-    assign_modality_4('dataset/V2XSET', output_path='opencood/logs/heter_modality_assign/v2xset_4modality.json')
+    assign_modality_4('dataset/V2XSET', output_path='opencood/modality_assign/v2xset_4modality.json')

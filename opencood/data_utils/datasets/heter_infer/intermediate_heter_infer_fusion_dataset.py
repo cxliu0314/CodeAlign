@@ -64,20 +64,15 @@ def getIntermediateheterinferFusionDataset(cls):
                 'm6': 'camera',
                 'm7': 'camera',
             }
-            # self.sensor_type_dict = { # for e2e pyramid and hmvit
-            #     'm1': 'lidar',
-            #     'm2': 'camera',
-            #     'm3': 'lidar',
-            #     'm4': 'lidar',
-            #     'm5': 'lidar',
-            # }
-            # self.sensor_type_dict = { # for e2e pyramid and hmvit
-            #     'm1': 'lidar',
-            #     'm2': 'lidar',
-            #     'm3': 'camera',
-            #     'm4': 'lidar',
-            #     'm5': 'lidar',
-            # }
+            # DAIR-V2X checkpoints reuse short modality names (for example m2)
+            # for camera agents, so the historical OPV2V hard-coded mapping is
+            # not sufficient there. Keep OPV2V behavior unchanged for old
+            # checkpoints, and only trust config sensor types on DAIR-V2X.
+            if params.get('fusion', {}).get('dataset') == 'dairv2x':
+                for modality_name, modality_setting in params.get('heter', {}).get('modality_setting', {}).items():
+                    sensor_type = modality_setting.get('sensor_type')
+                    if sensor_type is not None:
+                        self.sensor_type_dict[modality_name] = sensor_type
             print("\n\nCaution: make sure your sensor type is consistent with:")
             print(self.sensor_type_dict)
             print("Otherwise, modify it in opencood/data_utils/datasets/heter_infer/intermediate_heter_infer_fusion_dataset.py\n\n")
@@ -368,5 +363,3 @@ def getIntermediateheterinferFusionDataset(cls):
 
 
     return Intermediate_heter_Infer_Fusion_Dataset
-
-

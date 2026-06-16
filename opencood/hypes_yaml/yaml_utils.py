@@ -103,7 +103,11 @@ def load_voxel_params(param):
     anchor_args['H'] = int((cav_lidar_range[4] - cav_lidar_range[1]) / vh)
     anchor_args['D'] = int((cav_lidar_range[5] - cav_lidar_range[2]) / vd)
 
-    param['postprocess'].update({'anchor_args': anchor_args})
+    param['postprocess'].update({
+        'anchor_args': anchor_args,
+        'cav_lidar_range': param['postprocess'].get('cav_lidar_range', cav_lidar_range),
+        'voxel_size': param['postprocess'].get('voxel_size', voxel_size)
+    })
 
     # sometimes we just want to visualize the data without implementing model
     if 'model' in param:
@@ -155,7 +159,11 @@ def load_point_pillar_params(param):
     anchor_args['H'] = math.ceil((cav_lidar_range[4] - cav_lidar_range[1]) / vh) # H is image height
     anchor_args['D'] = math.ceil((cav_lidar_range[5] - cav_lidar_range[2]) / vd)
 
-    param['postprocess'].update({'anchor_args': anchor_args})
+    param['postprocess'].update({
+        'anchor_args': anchor_args,
+        'cav_lidar_range': param['postprocess'].get('cav_lidar_range', cav_lidar_range),
+        'voxel_size': param['postprocess'].get('voxel_size', voxel_size)
+    })
 
     return param
 

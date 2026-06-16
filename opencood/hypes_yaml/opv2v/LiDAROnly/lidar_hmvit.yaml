@@ -9,7 +9,7 @@ train_params:
   epoches: 60
   eval_freq: 2
   save_freq: 2
-  max_cav: &max_cav 5 
+  max_cav: &max_cav 5
 
 comm_range: 70
 input_source: ['lidar']
@@ -17,7 +17,7 @@ label_type: 'lidar'
 cav_lidar_range: &cav_lidar [-102.4, -102.4, -3, 102.4, 102.4, 1]
 
 heter:
-  assignment_path: "opencood/logs/heter_modality_assign/opv2v_4modality.json" 
+  assignment_path: "opencood/modality_assign/opv2v_4modality.json"
   ego_modality: &ego_modality "m1"
   mapping_dict:
     m1: m1
@@ -45,7 +45,7 @@ heter:
 fusion:
   core_method: 'intermediateheter'
   dataset: 'opv2v'
-  args: 
+  args:
     proj_first: false
     grid_conf: None # place-holder
     data_aug_conf: None # place-holder
@@ -112,7 +112,7 @@ model:
         num_filters: [ 64, 128, 256 ]
         upsample_strides: [ 1, 2, 4 ]
         num_upsample_filter: [ 128, 128, 128 ]
-  
+
       shrink_header:
         kernal_size: [ 3 ]
         stride: [ 2 ]
