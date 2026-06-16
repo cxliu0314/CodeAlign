@@ -1,12 +1,14 @@
-# CodeAlign
+# Linking Modality Isolation in Heterogeneous Collaborative Perception.（CVPR2026）
 
-Official implementation of **Linking Modality Isolation in Heterogeneous Collaborative Perception**.
+Official implementation of **Linking Modality Isolation in Heterogeneous Collaborative Perception** ([paper](https://openaccess.thecvf.com/content/CVPR2026/papers/Liu_Linking_Modality_Isolation_in_Heterogeneous_Collaborative_Perception_CVPR_2026_paper.pdf)).
 
-Collaborative perception improves each agent's perception capability through multi-agent information exchange. However, heterogeneous agents introduce cross-modal domain gaps, and the paper identifies a further underexplored challenge: **modality isolation**, where agents with different modalities never co-occur in the same training frame. Under this setting, existing alignment methods that depend on spatially overlapping observations cannot directly supervise cross-modal alignment.
+This paper studies **modality isolation**, a heterogeneous collaborative perception setting where agents with different modalities never co-occur in the same training frame.
 
-![Modality Isolation](intro.png)
+<p align="center">
+  <img src="intro.png" alt="Modality Isolation" width="50%">
+</p>
 
-To address this, **CodeAlign** is proposed as an efficient, co-occurrence-free alignment framework for heterogeneous collaborative perception. CodeAlign links isolated modalities through cross-modal feature-code-feature (FCF) translation: it first constructs modality-specific code spaces with codebooks, then learns translators that map features into target modality code spaces and decode them back into aligned features.
+**CodeAlign** links isolated modalities through feature-code-feature translation, aligning heterogeneous features without requiring cross-modal co-occurrence.
 
 ![CodeAlign Pipeline](pipeline.png)
 
