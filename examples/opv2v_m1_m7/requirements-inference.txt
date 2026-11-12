@@ -1,0 +1,27 @@
+# Install after the Conda environment; see ENVIRONMENT.md for torch-scatter and pypcd.
+easydict==1.13
+numba==0.56.4
+opencv-python-headless==4.5.1.48
+scipy==1.7.3
+scikit-image==0.19.3
+tqdm==4.65.2
+PyYAML==6.0.1
+open3d==0.17.0
+Cython==3.0.10
+tensorboardX==2.6.2.2
+shapely==2.0.0
+einops==0.6.1
+timm==0.4.12
+icecream==2.1.3
+h5py==3.8.0
+pyquaternion==0.9.9
+efficientnet-pytorch==0.7.0
+scikit-learn==1.0.2
+python-lzf==0.2.6
+termcolor==2.3.0
+matplotlib==3.5.2
+seaborn==0.12.2
+pandas==1.3.5
+Pillow==9.5.0
+spconv-cu116==2.3.6
+cumm-cu116==0.4.11

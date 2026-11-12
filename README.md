@@ -16,6 +16,12 @@ This paper studies **modality isolation**, a heterogeneous collaborative percept
 
 This repository follows the environment setup of [HEAL](https://github.com/yifanlu0227/HEAL). Please refer to the HEAL installation instructions for dependency installation, CUDA/PyTorch setup, and OpenCOOD-style package setup.
 
+## Pretrained OPV2V Example
+
+An m1 (LiDAR) + m7 (camera) example is available on [Hugging Face](https://huggingface.co/cxliu0314/CodeAlign-OPV2V-m1m7-FCF-v1).
+
+See [download and inference instructions](EXAMPLE_OPV2V_M1M7.md).
+
 ## Dataset
 
 Create a `dataset/` folder under the repository root. The main experiments use OPV2V and DAIR-V2X-C:

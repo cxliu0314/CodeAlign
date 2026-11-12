@@ -165,3 +165,7 @@ opencood/tools/inference_w_noise_heter.py
 docs/
 scripts/
 MODEL_ZOO.md
+
+# Downloaded example weights and inference outputs.
+examples/opv2v_m1_m7/weights/
+examples/opv2v_m1_m7/results/
